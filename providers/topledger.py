@@ -11,6 +11,7 @@ import requests
 
 from metrics.defi import Defi, DefiMetricType
 from metrics.overview import Overview, OverviewMetricType
+from metrics.perps import Perps, PerpsMetricType
 from metrics.stablecoin import Stablecoin, StablecoinMetricType
 from providers.base import BaseProvider
 
@@ -131,6 +132,36 @@ class TopLedger(BaseProvider):
             "value_field": "dex_counts",
             "methodology": "Distinct DEX programs with trading activity",
         },
+        "perps_trading_volume": {
+            "query_id": 15344,
+            "date_field": "block_date",
+            "value_field": "trading_volume_usd",
+            "methodology": "Daily perpetual futures trading volume across Solana perp venues in USD",
+        },
+        "perps_transactions": {
+            "query_id": 15344,
+            "date_field": "block_date",
+            "value_field": "transactions",
+            "methodology": "Number of perpetual futures trades on Solana perp venues per day",
+        },
+        "perps_venue_count": {
+            "query_id": 15344,
+            "date_field": "block_date",
+            "value_field": "perp_venue_count",
+            "methodology": "Number of Solana perp venues with trading activity",
+        },
+        "perps_traders": {
+            "query_id": 15346,
+            "date_field": "block_date",
+            "value_field": "unique_traders",
+            "methodology": "Number of unique daily traders on Solana perp venues",
+        },
+        "perps_open_interest": {
+            "query_id": 15343,
+            "date_field": "block_date",
+            "value_field": "total_open_interest_usd",
+            "methodology": "Total open interest across Solana perp venues in USD",
+        },
     }
 
     _OVERVIEW_METRIC_TYPE_MAP: Dict[str, OverviewMetricType] = {
@@ -155,6 +186,14 @@ class TopLedger(BaseProvider):
         "defi_dex_transactions": DefiMetricType.DEX_TRANSACTIONS,
         "defi_dex_traders": DefiMetricType.DEX_TRADERS,
         "defi_dex_count": DefiMetricType.DEX_COUNT,
+    }
+
+    _PERPS_METRIC_TYPE_MAP: Dict[str, PerpsMetricType] = {
+        "perps_trading_volume": PerpsMetricType.TRADING_VOLUME,
+        "perps_transactions": PerpsMetricType.TRANSACTIONS,
+        "perps_venue_count": PerpsMetricType.VENUE_COUNT,
+        "perps_traders": PerpsMetricType.TRADERS,
+        "perps_open_interest": PerpsMetricType.OPEN_INTEREST,
     }
 
     _POLL_INTERVAL = 2  # seconds between job status polls
@@ -277,7 +316,7 @@ class TopLedger(BaseProvider):
 
     def get_metric(
         self, metric: str, date: str, chain: str
-    ) -> Overview | Stablecoin | Defi | None:
+    ) -> Overview | Stablecoin | Defi | Perps | None:
         """Fetch one metric for one date and return it as a typed metric model."""
         rows = self.fetch_rows(metric, date, date)
         if not rows:
@@ -301,6 +340,12 @@ class TopLedger(BaseProvider):
         if defi_type is not None:
             return Defi.from_metric_type(
                 metric_type=defi_type, date=parsed_date, value=value
+            )
+
+        perps_type = self._PERPS_METRIC_TYPE_MAP.get(metric)
+        if perps_type is not None:
+            return Perps.from_metric_type(
+                metric_type=perps_type, date=parsed_date, value=value
             )
 
         return None
