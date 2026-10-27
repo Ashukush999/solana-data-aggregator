@@ -60,6 +60,30 @@ class TopLedger(BaseProvider):
             "value_field": "slots",
             "methodology": "Confirmed block slots",
         },
+        "overview_tx_count_total": {
+            "query_id": 15088,
+            "date_field": "block_date",
+            "value_field": "transactions",
+            "methodology": "Total count of all transactions on Solana per day",
+        },
+        "overview_tx_count_vote": {
+            "query_id": 15088,
+            "date_field": "block_date",
+            "value_field": "vote_transactions",
+            "methodology": "Count of vote transactions on Solana per day",
+        },
+        "overview_fees": {
+            "query_id": 15088,
+            "date_field": "block_date",
+            "value_field": "txns_fees",
+            "methodology": "Daily fees (base plus priority) on Solana in SOL",
+        },
+        "overview_compute_units": {
+            "query_id": 15357,
+            "date_field": "block_date",
+            "value_field": "avg_cu_per_block",
+            "methodology": "Average compute units per block daily on Solana",
+        },
         "overview_sol_price": {
             "query_id": 15089,
             "date_field": "block_date",
@@ -168,6 +192,10 @@ class TopLedger(BaseProvider):
         "overview_non_vote_tx_count_success": OverviewMetricType.TX_COUNT_NON_VOTE_SUCCESS,
         "overview_non_vote_tx_count_failed": OverviewMetricType.TX_COUNT_NON_VOTE_FAILED,
         "overview_slots": OverviewMetricType.SLOTS,
+        "overview_tx_count_total": OverviewMetricType.TX_COUNT_TOTAL,
+        "overview_tx_count_vote": OverviewMetricType.TX_COUNT_VOTE,
+        "overview_fees": OverviewMetricType.FEES,
+        "overview_compute_units": OverviewMetricType.COMPUTE_UNITS,
         "overview_sol_price": OverviewMetricType.SOL_PRICE,
         "overview_fee_payers": OverviewMetricType.FEE_PAYERS,
     }
