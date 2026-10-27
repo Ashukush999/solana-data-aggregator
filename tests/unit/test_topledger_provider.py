@@ -23,19 +23,33 @@ _RAW_ROWS = [
         "successful_non_vote_transactions": 30_000_000,
         "failed_non_vote_transactions": 5_000_000,
         "slots": 432_000,
+        "transactions": 80_000_000,
+        "vote_transactions": 45_000_000,
+        "txns_fees": 12_500.5,
     },
     {
         "block_date": "2026-07-02",
         "successful_non_vote_transactions": 29_500_000,
         "failed_non_vote_transactions": 4_800_000,
         "slots": 431_800,
+        "transactions": 78_500_000,
+        "vote_transactions": 44_200_000,
+        "txns_fees": 11_900.25,
     },
     {
         "block_date": "2026-07-03",
         "successful_non_vote_transactions": 31_000_000,
         "failed_non_vote_transactions": 5_100_000,
         "slots": 432_100,
+        "transactions": 81_200_000,
+        "vote_transactions": 45_100_000,
+        "txns_fees": 13_050.75,
     },
+]
+
+_COMPUTE_UNIT_ROWS = [
+    {"block_date": "2026-07-01", "avg_cu_per_block": 28_500_000.0},
+    {"block_date": "2026-07-02", "avg_cu_per_block": 29_100_000.0},
 ]
 
 
@@ -111,6 +125,50 @@ def test_fetch_rows_slots() -> None:
     assert rows[0]["value"] == 432_000.0
 
 
+def test_fetch_rows_tx_count_total() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        rows = provider.fetch_rows("overview_tx_count_total", _START, _END)
+
+    assert rows[0]["value"] == 80_000_000.0
+
+
+def test_fetch_rows_tx_count_vote() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        rows = provider.fetch_rows("overview_tx_count_vote", _START, _END)
+
+    assert rows[0]["value"] == 45_000_000.0
+
+
+def test_fetch_rows_fees() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        rows = provider.fetch_rows("overview_fees", _START, _END)
+
+    assert rows[0]["value"] == pytest.approx(12_500.5)
+
+
+def test_fetch_rows_compute_units() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session,
+        "post",
+        return_value=_immediate_result_resp(_COMPUTE_UNIT_ROWS),
+    ):
+        rows = provider.fetch_rows("overview_compute_units", _START, "2026-07-02")
+
+    assert len(rows) == 2
+    assert rows[0]["value"] == pytest.approx(28_500_000.0)
+    assert rows[1]["value"] == pytest.approx(29_100_000.0)
+
+
 def test_fetch_rows_sol_price() -> None:
     price_rows = [
         {"block_date": "2026-07-01", "sol_price_usd": 185.42},
@@ -168,6 +226,9 @@ def test_same_query_runs_once_for_multiple_metrics() -> None:
         provider.fetch_rows("overview_non_vote_tx_count_success", _START, _END)
         provider.fetch_rows("overview_non_vote_tx_count_failed", _START, _END)
         provider.fetch_rows("overview_slots", _START, _END)
+        provider.fetch_rows("overview_tx_count_total", _START, _END)
+        provider.fetch_rows("overview_tx_count_vote", _START, _END)
+        provider.fetch_rows("overview_fees", _START, _END)
 
     assert mock_post.call_count == 1
 
@@ -258,6 +319,56 @@ def test_get_metric_returns_overview_model() -> None:
     assert result.metric_type == OverviewMetricType.TX_COUNT_NON_VOTE_SUCCESS
     assert result.value == 30_000_000.0
     assert result.date == datetime.date.fromisoformat(_START)
+
+
+def test_get_metric_overview_tx_count_total() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        result = provider.get_metric("overview_tx_count_total", _START, "solana")
+
+    assert isinstance(result, Overview)
+    assert result.metric_type == OverviewMetricType.TX_COUNT_TOTAL
+    assert result.value == 80_000_000.0
+
+
+def test_get_metric_overview_tx_count_vote() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        result = provider.get_metric("overview_tx_count_vote", _START, "solana")
+
+    assert isinstance(result, Overview)
+    assert result.metric_type == OverviewMetricType.TX_COUNT_VOTE
+    assert result.value == 45_000_000.0
+
+
+def test_get_metric_overview_fees() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session, "post", return_value=_immediate_result_resp(_RAW_ROWS)
+    ):
+        result = provider.get_metric("overview_fees", _START, "solana")
+
+    assert isinstance(result, Overview)
+    assert result.metric_type == OverviewMetricType.FEES
+    assert result.value == pytest.approx(12_500.5)
+
+
+def test_get_metric_overview_compute_units() -> None:
+    provider = _make_provider()
+    with patch.object(
+        provider._session,
+        "post",
+        return_value=_immediate_result_resp(_COMPUTE_UNIT_ROWS),
+    ):
+        result = provider.get_metric("overview_compute_units", _START, "solana")
+
+    assert isinstance(result, Overview)
+    assert result.metric_type == OverviewMetricType.COMPUTE_UNITS
+    assert result.value == pytest.approx(28_500_000.0)
 
 
 def test_get_metric_returns_none_when_no_rows() -> None:
